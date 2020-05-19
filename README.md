@@ -12,7 +12,7 @@ Les adresses sont celles admises sur <https://api-adresse.data.gouv.fr>
 
 En cliquant sur la carte le rayon est calculé dynamiquement.
 
-#Couches
+# Couches
 Les couches affichées sont : Géoportail cartes IGN, Géoportail satellites, Géoportail aviation OACI.
 Pour intégrer dans votre propre site web demandez une clef api à <contact.geoservices@ign.fr>
 
