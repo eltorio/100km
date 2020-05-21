@@ -6,14 +6,15 @@ var clefGeoportail = (typeof clefGeoportail === 'undefined') ? realGeoportailAPI
 const fallbackAddress = '18 Route de Notre Dame de la Gorge, 74170 Les Contamines-Monjoie'; //Bureau des guides Contas
 var address = fallbackAddress;
 var addressSet = jQuery.Deferred(); // not yet
+var initialZoomLevel = 10; // automatically replaced if parameter z= is provided
 const scoreMiniGeocoding = 0.6;
 const greenDistance = 100000; //100km
-const wgs84_fullextent = [-198.023011999972, -99.1758454464684, 198.035711151158,  99.0083737124466];
+const wgs84_fullextent = [-198.023011999972, -99.1758454464684, 198.035711151158, 99.0083737124466];
 const rgf93_fullextent = [-357823.2365, 6037008.6939, 1313632.3628, 7230727.3772];
 
 const paysISO = "FR"; // 3 lettres = FRA
 var geocodedAddress;
-var mapCenter = [652311,6862059];
+var mapCenter = [652311, 6862059];
 
 //Proj4 initialization
 proj4.defs("EPSG:2154", "+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -25,10 +26,9 @@ var proj_4326 = ol.proj.get('EPSG:4326');
 
 const urlParams = new URLSearchParams(window.location.search);
 
-function popupFormHandler()
-{
-      address = jQuery("#input-address").val();
-      jQuery.colorbox.close();
+function popupFormHandler() {
+  address = jQuery("#input-address").val();
+  jQuery.colorbox.close();
 }
 
 var popUPColorbox = `
@@ -38,31 +38,70 @@ var popUPColorbox = `
   <p style="font-size: 12pt; text-align: right; margin-right: -25px;color:#656564"><a id="click" onclick="popupFormHandler()" href="#" style="padding: 5px; background: rgb(65,65,64) none repeat scroll 0% 0%; color: rgb(255, 255, 255); cursor: inherit;">Go</a></p>
 </div>`
 
-function setAddressFromPopup(){
-        
-        jQuery.colorbox({
-                closeButton : true,
-                html: popUPColorbox,
-                speed: 500,
-                width: "400px"
-                });
+function insertParam(key, value) {
+  key = encodeURI(key); value = encodeURI(value);
+  var kvp = document.location.search.substr(1).split('&');
+  var baseURL = document.location.origin;
+  baseURL += document.location.pathname;
+  if (kvp == '') {
+    history.replaceState(null,null,baseURL + '?' + key + '=' + value);
+  }
+  else {
+    var i = kvp.length; var x; while (i--) {
+      x = kvp[i].split('=');
 
-        // event handler
-        jQuery(document).bind('cbox_closed', function(){
-                addressSet.resolve();
-                });
+      if (x[0] == key) {
+        x[1] = value;
+        kvp[i] = x.join('=');
+        break;
+      }
+    }
+    if (i < 0) { kvp[kvp.length] = [key, value].join('='); }
+    //document.location.search = '?' + kvp.join('&');
+    history.replaceState(null,null,baseURL + '?' + kvp.join('&'));
+  }
+
 }
-if (urlParams.get('a') !== null){
-    address =  urlParams.get('a');
+
+function setAddressFromPopup() {
+
+  jQuery.colorbox({
+    closeButton: true,
+    html: popUPColorbox,
+    speed: 500,
+    width: "400px"
+  });
+
+  // event handler
+  jQuery(document).bind('cbox_closed', function () {
+    insertParam('a', address); //adds the filled address to the URL for giving the ability to store the result
     addressSet.resolve();
-}else{
+  });
+}
+
+//Pare URL
+if (urlParams.get('a') !== null) {
+  address = urlParams.get('a');
+  addressSet.resolve();
+} else {
   setAddressFromPopup();
+}
+
+if (urlParams.get('z') !== null) {
+  var _zoom = urlParams.get('z');
+  if (jQuery.isNumeric(_zoom)) {
+    _zoom = Number.parseInt(_zoom);
+    if ((_zoom >= 4) && (_zoom <= 18)) {
+      initialZoomLevel = _zoom;
+    }
+  }
+
 }
 
 
 
 // Openlayers 6 features:
-var polyDepartement,polyPays,polyFullRGF93,greenCircle,greenZone,invertedGreenZone, domicilePoint;  // All are features
+var polyDepartement, polyPays, polyFullRGF93, greenCircle, greenZone, invertedGreenZone, domicilePoint;  // All are features
 var clickedPoint; // a ol.geom.Point geometry
 var clickedLineString; //a ol.geom.LineString
 
@@ -106,31 +145,31 @@ var jstsWriter = new jsts.io.WKTWriter()
 var jstsReducer = new jsts.precision.GeometryPrecisionReducer(new jsts.geom.PrecisionModel(jsts.geom.PrecisionModel.FLOATING_SINGLE));
 
 var vectorSourceStyles = {
-        'greenZone' : new ol.style.Style({
-                stroke: new ol.style.Stroke({
-                  color: 'green',
-                  width: 3
-                }),
-                fill: new ol.style.Fill({
-                  color: 'rgba(0, 0, 255, 0.1)'
-                })
-        }),
-        'invertedGreenZone' : new ol.style.Style({
-          stroke: new ol.style.Stroke({
-            color: 'blue',
-            width: 3
-          }),
-          fill: new ol.style.Fill({
-            color: 'rgba(0, 0, 255, 0.1)'
-          })
+  'greenZone': new ol.style.Style({
+    stroke: new ol.style.Stroke({
+      color: 'green',
+      width: 3
+    }),
+    fill: new ol.style.Fill({
+      color: 'rgba(0, 0, 255, 0.1)'
+    })
   }),
-        'domMarker' : new ol.style.Style({
-          image: new ol.style.Icon({
-            anchor: [0.5, 1],
-            scale: 0.5,
-            src: 'marker-red.svg'
-          })
-        })
+  'invertedGreenZone': new ol.style.Style({
+    stroke: new ol.style.Stroke({
+      color: 'blue',
+      width: 3
+    }),
+    fill: new ol.style.Fill({
+      color: 'rgba(0, 0, 255, 0.1)'
+    })
+  }),
+  'domMarker': new ol.style.Style({
+    image: new ol.style.Icon({
+      anchor: [0.5, 1],
+      scale: 0.5,
+      src: 'marker-red.svg'
+    })
+  })
 };
 var positiveVectorSource = new ol.source.Vector({
   format: new ol.format.GeoJSON({ dataProjection: proj_2154, defaultDataProjection: proj_2154, geometryName: "Green Zone" }),
@@ -158,7 +197,7 @@ function geoCodeAddress(givenAddress) {
   var domicile = geoCodedAddress.getGeometry().transform(proj_4326, proj_2154).getCoordinates();
   var api_address_properties = JSON.parse(geocodingRequest.responseText).features[0].properties;
   var departement = api_address_properties.citycode.substr(0, 2);
-  return { 'domicile': domicile, 'departement': departement, 'pays': paysISO , 'score': api_address_properties.score, 'type':api_address_properties.type, 'properties':api_address_properties};  //pays en dur
+  return { 'domicile': domicile, 'departement': departement, 'pays': paysISO, 'score': api_address_properties.score, 'type': api_address_properties.type, 'properties': api_address_properties };  //pays en dur
 }
 
 function getGeoJsonAsAFeature(url, projection, geometryName) {
@@ -184,7 +223,7 @@ var popupOverlay = new ol.Overlay({
   }
 });
 
-popupCloser.onclick = function() {
+popupCloser.onclick = function () {
   popupOverlay.setPosition(undefined);
   popupCloser.blur();
   return false;
@@ -196,95 +235,95 @@ var map = new ol.Map({
     new ol.layer.Group({
       title: 'Cartes',
       layers: [
-                              new ol.layer.Tile({
-                                title: 'Carte IGN',
-                                source: new ol.source.WMTS({
-                                url: `https://wxs.ign.fr/${clefChoisirGeoportail}/geoportail/wmts`,
-                                layer: 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD',
-                                  matrixSet: 'PM',
-                                  format: 'image/jpeg',
-                                  projection: proj_3857,
-                                  style: 'normal',
-                                  tileGrid: new ol.tilegrid.WMTS({
-                                    origin: [-20037508, 20037508],
-                                    resolutions: ign_resolutions, 
-                                    matrixIds: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"] // TileMatrix IDs
-                                  }),
-                                  attributions: '<a href="http://www.geoportail.fr/" target="_blank">Fonds de carte ©IGN</a> et code ©Ronan 😂'
-                                })
-                              }),
-                              new ol.layer.Tile({
-                                title: 'Images IGN',
-                                visible: false,
-                                source: new ol.source.WMTS({
-                                  url: `https://wxs.ign.fr/${clefChoisirGeoportail}/geoportail/wmts`,
-                                  layer: 'ORTHOIMAGERY.ORTHOPHOTOS',
-                                  matrixSet: 'PM',
-                                  format: 'image/jpeg',
-                                  projection: proj_3857,
-                                  style: 'normal',
-                                  tileGrid: new ol.tilegrid.WMTS({
-                                    origin: [-20037508, 20037508],
-                                    resolutions: ign_resolutions, 
-                                    matrixIds: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
-                                  }),
-                                  attributions: '<a href="http://www.geoportail.fr/" target="_blank">Fonds de carte ©IGN</a> et code ©Ronan 😂'
-                                })
-                              }),
-                              new ol.layer.Tile({
-                                title: clefGeoportail != realGeoportailAPIKey ? 'Espaces OACI' : "DEMANDEZ UNE CLÉ contact.geoservices@ign.fr - Espaces OACI",
-                                visible: false,
-                                source: new ol.source.WMTS({
-                                  url: `https://wxs.ign.fr/${clefGeoportail}/geoportail/wmts`,
-                                  layer: 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI',
-                                  matrixSet: 'PM',
-                                  format: 'image/jpeg',
-                                  projection: proj_3857,
-                                  style: 'normal',
-                                  tileGrid: new ol.tilegrid.WMTS({
-                                    origin: [-20037508, 20037508],
-                                    resolutions: ign_resolutions, 
-                                    matrixIds: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
-                                  }),
-                                  attributions: '<a href="https://www.sia.aviation-civile.gouv.fr" target="_blank">Fonds de carte ©DGAC/IGN</a> et code ©Ronan 😂'
-                                })
-                              }),                                                             
-                  ]
-                }),
-    new ol.layer.Group({
-        title: 'Degré de liberté',
-        layers: [
-          new ol.layer.Vector({
-            title: 'zone interdite',
-            type: 'base',
-            visible: false,
-            source: positiveVectorSource,
-            style: function(feature) {
-              return vectorSourceStyles[feature.get('type')];
-            }
-          }),
-          new ol.layer.Vector({
-            title: 'zone libre',
-            type: 'base',
-            source: negativeVectorSource,
-            style: function(feature) {
-              return vectorSourceStyles[feature.get('type')];
-            }
-          }),
-          new ol.layer.Vector({
-            title: 'Repères',
-            source: markersVectorSource,
-            style: function(feature) {
-              return vectorSourceStyles[feature.get('type')];
-            }
+        new ol.layer.Tile({
+          title: 'Carte IGN',
+          source: new ol.source.WMTS({
+            url: `https://wxs.ign.fr/${clefChoisirGeoportail}/geoportail/wmts`,
+            layer: 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD',
+            matrixSet: 'PM',
+            format: 'image/jpeg',
+            projection: proj_3857,
+            style: 'normal',
+            tileGrid: new ol.tilegrid.WMTS({
+              origin: [-20037508, 20037508],
+              resolutions: ign_resolutions,
+              matrixIds: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"] // TileMatrix IDs
+            }),
+            attributions: '<a href="http://www.geoportail.fr/" target="_blank">Fonds de carte ©IGN</a> et code ©Ronan 😂'
           })
-        ]
-      })
+        }),
+        new ol.layer.Tile({
+          title: 'Images IGN',
+          visible: false,
+          source: new ol.source.WMTS({
+            url: `https://wxs.ign.fr/${clefChoisirGeoportail}/geoportail/wmts`,
+            layer: 'ORTHOIMAGERY.ORTHOPHOTOS',
+            matrixSet: 'PM',
+            format: 'image/jpeg',
+            projection: proj_3857,
+            style: 'normal',
+            tileGrid: new ol.tilegrid.WMTS({
+              origin: [-20037508, 20037508],
+              resolutions: ign_resolutions,
+              matrixIds: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
+            }),
+            attributions: '<a href="http://www.geoportail.fr/" target="_blank">Fonds de carte ©IGN</a> et code ©Ronan 😂'
+          })
+        }),
+        new ol.layer.Tile({
+          title: clefGeoportail != realGeoportailAPIKey ? 'Espaces OACI' : "DEMANDEZ UNE CLÉ contact.geoservices@ign.fr - Espaces OACI",
+          visible: false,
+          source: new ol.source.WMTS({
+            url: `https://wxs.ign.fr/${clefGeoportail}/geoportail/wmts`,
+            layer: 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-OACI',
+            matrixSet: 'PM',
+            format: 'image/jpeg',
+            projection: proj_3857,
+            style: 'normal',
+            tileGrid: new ol.tilegrid.WMTS({
+              origin: [-20037508, 20037508],
+              resolutions: ign_resolutions,
+              matrixIds: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
+            }),
+            attributions: '<a href="https://www.sia.aviation-civile.gouv.fr" target="_blank">Fonds de carte ©DGAC/IGN</a> et code ©Ronan 😂'
+          })
+        }),
+      ]
+    }),
+    new ol.layer.Group({
+      title: 'Degré de liberté',
+      layers: [
+        new ol.layer.Vector({
+          title: 'zone interdite',
+          type: 'base',
+          visible: false,
+          source: positiveVectorSource,
+          style: function (feature) {
+            return vectorSourceStyles[feature.get('type')];
+          }
+        }),
+        new ol.layer.Vector({
+          title: 'zone libre',
+          type: 'base',
+          source: negativeVectorSource,
+          style: function (feature) {
+            return vectorSourceStyles[feature.get('type')];
+          }
+        }),
+        new ol.layer.Vector({
+          title: 'Repères',
+          source: markersVectorSource,
+          style: function (feature) {
+            return vectorSourceStyles[feature.get('type')];
+          }
+        })
+      ]
+    })
   ],
   overlays: [popupOverlay],
   view: new ol.View({
     //center: mapCenter,
-    zoom: 10,
+    zoom: initialZoomLevel,
     projection: proj_2154
     // extent: bounds
   })
@@ -300,39 +339,38 @@ var map = new ol.Map({
 // greenZone: feature openlayer [ ( polyDepartement ⋃ greenCircle ) ⋂ polyPays)
 
 //in keys is defined the same functions but returning a WMS url
-var getUrlDepartement = (typeof getUrlDepartement === 'undefined') ? function(insee_code){ 
-                                            return `geobase/INSEE_DEP_${insee_code}.json`;   
-                                                                                      }
-                                                                : getUrlDepartement ;
+var getUrlDepartement = (typeof getUrlDepartement === 'undefined') ? function (insee_code) {
+  return `geobase/INSEE_DEP_${insee_code}.json`;
+}
+  : getUrlDepartement;
 
-var getUrlPays = (typeof getUrlPays === 'undefined') ? function(iso_code){ 
-  return `geobase/PAYS_${iso_code}.json`;   
-                                            }
-                      : getUrlPays ;
+var getUrlPays = (typeof getUrlPays === 'undefined') ? function (iso_code) {
+  return `geobase/PAYS_${iso_code}.json`;
+}
+  : getUrlPays;
 
-jQuery.when(addressSet).then( function(){
-  jQuery.when(geoCodeAddress(address)).done(function (_geocodedAddress){
-    if (_geocodedAddress.score > scoreMiniGeocoding)
-    {
+jQuery.when(addressSet).then(function () {
+  jQuery.when(geoCodeAddress(address)).done(function (_geocodedAddress) {
+    if (_geocodedAddress.score > scoreMiniGeocoding) {
       geocodedAddress = _geocodedAddress;
       domicilePoint = new ol.Feature({
-                        type: 'domMarker',
-                        geometry: new ol.geom.Point(geocodedAddress.domicile)
-                        });
+        type: 'domMarker',
+        geometry: new ol.geom.Point(geocodedAddress.domicile)
+      });
       var urlDepartement = getUrlDepartement(geocodedAddress.departement);
       var urlPays = getUrlPays(geocodedAddress.pays);
-    
-      console.log("urlDepartement: "+urlDepartement);
-      console.log("urlPays: "+ urlPays);
-      jQuery.when(getGeoJsonAsAFeature(urlDepartement, proj_2154, "monDépartement"),getGeoJsonAsAFeature(urlPays, proj_4326, "monPays")).done(function(_polyDepartement,_polyPays){
+
+      console.log("urlDepartement: " + urlDepartement);
+      console.log("urlPays: " + urlPays);
+      jQuery.when(getGeoJsonAsAFeature(urlDepartement, proj_2154, "monDépartement"), getGeoJsonAsAFeature(urlPays, proj_4326, "monPays")).done(function (_polyDepartement, _polyPays) {
         polyDepartement = _polyDepartement;
         mapCenter = ol.extent.getCenter(polyDepartement.getGeometry().getExtent());
         polyPays = _polyPays;
         polyPays.getGeometry().transform(proj_4326, proj_2154); // Why ????? MapServer config error?
         greenCircle = new ol.Feature(ol.geom.Polygon.fromCircle(new ol.geom.Circle(geocodedAddress.domicile, greenDistance), 1000));
-      
-        polyFullRGF93 =  new ol.Feature(ol.geom.Polygon.fromExtent(rgf93_fullextent));
-      
+
+        polyFullRGF93 = new ol.Feature(ol.geom.Polygon.fromExtent(rgf93_fullextent));
+
         var jstsPolyPaysHigh = jstsParser.read(polyPays.getGeometry());
         var jstsPolyDepartementHigh = jstsParser.read(polyDepartement.getGeometry());
         var jstsPolyPays = jstsReducer.reduce(jstsPolyPaysHigh);
@@ -345,18 +383,18 @@ jQuery.when(addressSet).then( function(){
         var jstsInvertedGreenZone = jstsParser.read(polyFullRGF93.getGeometry()).difference(jstsGreenZone);
         var formatWKT = new ol.format.WKT();
         greenZone = formatWKT.readFeature(jstsWriter.write(jstsGreenZone));
-        greenZone.set('type','greenZone');
+        greenZone.set('type', 'greenZone');
         positiveVectorSource.addFeature(greenZone);
 
         invertedGreenZone = formatWKT.readFeature(jstsWriter.write(jstsInvertedGreenZone));
-        invertedGreenZone.set('type','invertedGreenZone');
+        invertedGreenZone.set('type', 'invertedGreenZone');
         negativeVectorSource.addFeature(invertedGreenZone);
 
         //Marker
         markersVectorSource.addFeature(domicilePoint);
 
         //Center
-        map.getView().setCenter(mapCenter);
+        map.getView().setCenter(domicilePoint.getGeometry().getCoordinates());
       });
     } //  if (_geocodedAddress.score > scoreMiniGeocoding) 
   });
@@ -370,11 +408,24 @@ var layerSwitcher = new ol.control.LayerSwitcher({
 map.addControl(layerSwitcher);
 
 // click event
-map.on('click', function(evt){
+map.on('click', function (evt) {
   clickedPoint = new ol.geom.Point(evt.coordinate);
-  clickedLineString = new ol.geom.LineString([clickedPoint.getCoordinates(),domicilePoint.getGeometry().getCoordinates()])
+  clickedLineString = new ol.geom.LineString([clickedPoint.getCoordinates(), domicilePoint.getGeometry().getCoordinates()])
   console.log("clic: " + evt.coordinate + "(m RGF93) longueur:" + clickedLineString.getLength() + "m");
-  popupContent.innerHTML = `<p>Depuis:<br/>${geocodedAddress.properties.label}</p>` + Math.round((clickedLineString.getLength()/1000 + Number.EPSILON) * 100) / 100  +
-      ' km';
+  popupContent.innerHTML = `<p>Depuis:<br/>${geocodedAddress.properties.label}</p>` + Math.round((clickedLineString.getLength() / 1000 + Number.EPSILON) * 100) / 100 +
+    ' km';
   popupOverlay.setPosition(evt.coordinate);
+});
+
+
+map.on('moveend', function(e) {
+  var newZoom = map.getView().getZoom();
+  if (newZoom != initialZoomLevel) {
+    console.log('zoom end, new zoom: ' + newZoom);
+    initialZoomLevel = newZoom;
+    var cleanZoom = Math.round(newZoom);
+    cleanZoom = (cleanZoom < 4 ) ? 4 : cleanZoom;
+    cleanZoom = (cleanZoom > 19) ? 19 : cleanZoom;
+    insertParam('z',cleanZoom)
+  }
 });

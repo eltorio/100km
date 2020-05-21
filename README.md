@@ -14,10 +14,14 @@ la virgule séparant la ville et la partie rue.
 
 En cliquant sur la carte le rayon est calculé dynamiquement.
 
+Le paramètre z= peut prendre une valeur de 4 à 19 il s'agit du niveau de zoom initial.
+L'URL dans la barre d'adresse est mise à jour dynamiquement avec les paramètres a= si celui-ci n'était pas fourni et z= lors du changement de zoom.
+
 # Couches
 Les couches affichées sont : Géoportail cartes IGN, Géoportail satellites, Géoportail aviation OACI.
 Pour intégrer dans votre propre site web demandez une clef api à <contact.geoservices@ign.fr>
 
+# Adaptation
 un fichier est manquant: keys.js il sert à définir 3 variables:
 ```javascript
 var clefGeoportail = "votreclef"; 
