@@ -79,7 +79,7 @@ function setAddressFromPopup() {
   });
 }
 
-//Pare URL
+//Parse URL
 if (urlParams.get('a') !== null) {
   address = urlParams.get('a');
   addressSet.resolve();
@@ -97,6 +97,19 @@ if (urlParams.get('z') !== null) {
   }
 
 }
+if (urlParams.get('x') !== null){
+  var _x = urlParams.get('x');
+  if (jQuery.isNumeric(_x)){
+      mapCenter[0] = Number.parseFloat(_x);
+  }
+}
+if (urlParams.get('y') !== null){
+  var _y = urlParams.get('y');
+  if (jQuery.isNumeric(_y)){
+      mapCenter[1] = Number.parseFloat(_y);
+  }
+}
+
 
 
 
@@ -364,7 +377,6 @@ jQuery.when(addressSet).then(function () {
       console.log("urlPays: " + urlPays);
       jQuery.when(getGeoJsonAsAFeature(urlDepartement, proj_2154, "monDépartement"), getGeoJsonAsAFeature(urlPays, proj_4326, "monPays")).done(function (_polyDepartement, _polyPays) {
         polyDepartement = _polyDepartement;
-        mapCenter = ol.extent.getCenter(polyDepartement.getGeometry().getExtent());
         polyPays = _polyPays;
         polyPays.getGeometry().transform(proj_4326, proj_2154); // Why ????? MapServer config error?
         greenCircle = new ol.Feature(ol.geom.Polygon.fromCircle(new ol.geom.Circle(geocodedAddress.domicile, greenDistance), 1000));
@@ -393,8 +405,17 @@ jQuery.when(addressSet).then(function () {
         //Marker
         markersVectorSource.addFeature(domicilePoint);
 
-        //Center
-        map.getView().setCenter(domicilePoint.getGeometry().getCoordinates());
+        //Center//move to the provided coordinates in URL only if they are in the 'greenZone' otherwise use domicile as center
+        if (((urlParams.get('x') !== undefined) && (urlParams.get('y') !== undefined)) && 
+                greenZone.getGeometry().intersectsCoordinate(mapCenter)  //x,y coordinates were already parsed to mapCenter
+          )
+        {
+          map.getView().setCenter(mapCenter);
+        }else{
+          mapCenter = ol.extent.getCenter(polyDepartement.getGeometry().getExtent());
+          map.getView().setCenter(domicilePoint.getGeometry().getCoordinates());
+        }
+
       });
     } //  if (_geocodedAddress.score > scoreMiniGeocoding) 
   });
@@ -419,6 +440,8 @@ map.on('click', function (evt) {
 
 
 map.on('moveend', function(e) {
+  var newCenter = map.getView().getCenter();
+  insertParam("x", newCenter[0]);  insertParam("y", newCenter[1]);
   var newZoom = map.getView().getZoom();
   if (newZoom != initialZoomLevel) {
     console.log('zoom end, new zoom: ' + newZoom);
