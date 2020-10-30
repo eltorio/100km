@@ -78,8 +78,8 @@ function setAddressFromPopup() {
     width: "400px"
   });
 
-  if (setIncudeDepartmentFromURL() !== null) {
-    includeDepartement = setIncudeDepartmentFromURL();
+  if (setIncludeDepartmentFromURL() !== null) {
+    includeDepartement = setIncludeDepartmentFromURL();
     jQuery("#include_departement").prop('checked', includeDepartement);
   }
 
@@ -129,7 +129,7 @@ if (urlParams.get('y') !== null){
 }
 
 
-function setIncudeDepartmentFromURL(){
+function setIncludeDepartmentFromURL(){
   var _includeDepartement = null;
   if (urlParams.get('d') !== null){
     var _d = urlParams.get('d');
