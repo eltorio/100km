@@ -8,7 +8,9 @@ var address = fallbackAddress;
 var addressSet = jQuery.Deferred(); // not yet
 var initialZoomLevel = 10; // automatically replaced if parameter z= is provided
 const scoreMiniGeocoding = 0.6;
-const greenDistance = 100000; //100km
+const fallbackGreenDistance = 100000; //100km
+var greenDistance = fallbackGreenDistance;
+var includeDepartement = true;
 const wgs84_fullextent = [-198.023011999972, -99.1758454464684, 198.035711151158, 99.0083737124466];
 const rgf93_fullextent = [-357823.2365, 6037008.6939, 1313632.3628, 7230727.3772];
 
@@ -28,6 +30,8 @@ const urlParams = new URLSearchParams(window.location.search);
 
 function popupFormHandler() {
   address = jQuery("#input-address").val();
+  greenDistance = jQuery("#circle_size").val()*1000;
+  includeDepartement = jQuery("#include_departement")[0].checked;
   jQuery.colorbox.close();
 }
 
@@ -35,6 +39,8 @@ var popUPColorbox = `
 <!-- Modal content -->
 <div style="margin-left:50px;margin-right:50px;font-family: Arial, Helvetica, sans-serif; font-size:12pt;line-height: 1" id="modal-ext-div">
   <p id="p-address" style="text-align: left;font-size:14pt;color:#656564">Adresse:<br /> <textarea rows="3" cols="40" id="input-address" style="text-align: left;font-size:10pt;color:#656564">18 Route de Notre Dame de la Gorge, 74170 Les Contamines-Monjoie</textarea></p>
+  <p><input type="checkbox" id="include_departement" name="include_departement" checked><label for="include_departement">Inclure tout le département département?</label></p>
+  <p><input type="number" id="circle_size" name="circle_size" value="100"><label for="circle_size">Taille du cercle (km)?</label></p>
   <p style="font-size: 12pt; text-align: right; margin-right: -25px;color:#656564"><a id="click" onclick="popupFormHandler()" href="#" style="padding: 5px; background: rgb(65,65,64) none repeat scroll 0% 0%; color: rgb(255, 255, 255); cursor: inherit;">Go</a></p>
 </div>`
 
@@ -75,6 +81,8 @@ function setAddressFromPopup() {
   // event handler
   jQuery(document).bind('cbox_closed', function () {
     insertParam('a', address); //adds the filled address to the URL for giving the ability to store the result
+    if (includeDepartement) { insertParam('d','1'); }else{ insertParam('d','0');}
+    insertParam('r',greenDistance);
     addressSet.resolve();
   });
 }
@@ -110,8 +118,35 @@ if (urlParams.get('y') !== null){
   }
 }
 
+if (urlParams.get('d') !== null){
+  var _d = urlParams.get('d');
+  if (jQuery.isNumeric(_d)){
+      if ( (_d==0) || (_d==1) )
+              { 
+                includeDepartement = (_d==1) ? true : false;
+              }
+      
+  }
+}
 
+if (urlParams.get('d') !== null){
+  var _d = urlParams.get('d');
+  if (jQuery.isNumeric(_d)){
+      if ( (_d==0) || (_d==1) )
+              { 
+                includeDepartement = (_d==1) ? true : false;
+              }
+      
+  }
+}
 
+if (urlParams.get('r') !== null){
+  var _r = urlParams.get('r');
+  if (jQuery.isNumeric(_r)){
+     greenDistance = parseInt(_r);
+      
+  }
+}
 
 // Openlayers 6 features:
 var polyDepartement, polyPays, polyFullRGF93, greenCircle, greenZone, invertedGreenZone, domicilePoint;  // All are features
@@ -388,7 +423,7 @@ jQuery.when(addressSet).then(function () {
         var jstsPolyPays = jstsReducer.reduce(jstsPolyPaysHigh);
         var jstsPolyDepartement = jstsReducer.reduce(jstsPolyDepartementHigh);
         var jstsCircle = jstsParser.read(greenCircle.getGeometry());
-        var jstsMaxiGreenZone = jstsPolyDepartement.union(jstsCircle);
+        var jstsMaxiGreenZone = includeDepartement ? jstsPolyDepartement.union(jstsCircle) : jstsCircle;
         var jstsGreenZone = jstsMaxiGreenZone.intersection(jstsPolyPays);
 
         //inversion
