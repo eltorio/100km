@@ -91,7 +91,7 @@ function setAddressFromPopup() {
   jQuery(document).bind('cbox_closed', function () {
     insertParam('a', address); //adds the filled address to the URL for giving the ability to store the result
     if (includeDepartement) { insertParam('d','1'); }else{ insertParam('d','0');}
-    insertParam('r',greenDistance);
+    insertParam('r',greenDistance/1000);
     addressSet.resolve();
   });
 }
@@ -145,16 +145,16 @@ function setIncludeDepartmentFromURL(){
   if (setIncludeDepartmentFromURL() !== null) {includeDepartement = setIncludeDepartmentFromURL() ;}
 
 function setRadiusFromURL(){
-  var _greenDistance = null;
+  var _radius = null;
     if (urlParams.get('r') !== null){
     var _r = urlParams.get('r');
     if (jQuery.isNumeric(_r)){
-      _greenDistance = parseInt(_r);
+      _radius = parseFloat(_r);
       }
     }
-    return _greenDistance;
+    return _radius;
   }
-  if ( setRadiusFromURL() !== null) {greenDistance = setRadiusFromURL();}
+  if ( setRadiusFromURL() !== null) {greenDistance = setRadiusFromURL()*1000;}
 
 
 // Openlayers 6 features:
