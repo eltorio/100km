@@ -78,6 +78,15 @@ function setAddressFromPopup() {
     width: "400px"
   });
 
+  if (setIncudeDepartmentFromURL() !== null) {
+    includeDepartement = setIncudeDepartmentFromURL();
+    jQuery("#include_departement").prop('checked', includeDepartement);
+  }
+
+  if (setRadiusFromURL() !== null) {
+    jQuery("#circle_size").val(setRadiusFromURL());
+
+  }
   // event handler
   jQuery(document).bind('cbox_closed', function () {
     insertParam('a', address); //adds the filled address to the URL for giving the ability to store the result
@@ -111,6 +120,7 @@ if (urlParams.get('x') !== null){
       mapCenter[0] = Number.parseFloat(_x);
   }
 }
+
 if (urlParams.get('y') !== null){
   var _y = urlParams.get('y');
   if (jQuery.isNumeric(_y)){
@@ -118,35 +128,34 @@ if (urlParams.get('y') !== null){
   }
 }
 
-if (urlParams.get('d') !== null){
-  var _d = urlParams.get('d');
-  if (jQuery.isNumeric(_d)){
-      if ( (_d==0) || (_d==1) )
-              { 
-                includeDepartement = (_d==1) ? true : false;
-              }
-      
-  }
-}
 
-if (urlParams.get('d') !== null){
-  var _d = urlParams.get('d');
-  if (jQuery.isNumeric(_d)){
-      if ( (_d==0) || (_d==1) )
-              { 
-                includeDepartement = (_d==1) ? true : false;
-              }
-      
+function setIncudeDepartmentFromURL(){
+  var _includeDepartement = null;
+  if (urlParams.get('d') !== null){
+    var _d = urlParams.get('d');
+      if (jQuery.isNumeric(_d)){
+          if ( (_d==0) || (_d==1) )
+                  { 
+                    _includeDepartement = (_d==1) ? true : false;
+                  }
+        }
+      }
+    return _includeDepartement;
   }
-}
+  if (setIncudeDepartmentFromURL() !== null) {includeDepartement = setIncudeDepartmentFromURL() ;}
 
-if (urlParams.get('r') !== null){
-  var _r = urlParams.get('r');
-  if (jQuery.isNumeric(_r)){
-     greenDistance = parseInt(_r);
-      
+function setRadiusFromURL(){
+  var _greenDistance = null;
+    if (urlParams.get('r') !== null){
+    var _r = urlParams.get('r');
+    if (jQuery.isNumeric(_r)){
+      _greenDistance = parseInt(_r);
+      }
+    }
+    return _greenDistance;
   }
-}
+  if ( setRadiusFromURL() !== null) {greenDistance = setRadiusFromURL();}
+
 
 // Openlayers 6 features:
 var polyDepartement, polyPays, polyFullRGF93, greenCircle, greenZone, invertedGreenZone, domicilePoint;  // All are features
