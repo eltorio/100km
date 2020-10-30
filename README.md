@@ -28,8 +28,8 @@ Une adaptation a été faite pour prendre en compte les règles du confinement.
 Dans la popup il est nécessaire de décocher la case d'inclusion du département (seules les règles de distance et de frontières sont utilisées).
 Il faut également réduire à 1 la taille du cercle (1km).
 L'URL obtenue donne par exemple:
-https://eltorio.github.io/100km/?a=18%20Route%20de%20Notre%20Dame%20de%20la%20Gorge,%2074170%20Les%20Contamines-Monjoie&d=0&r=1000&x=989253.7471025363&y=6531596.167614371&z=16
-Pour accéder à la popup pré-réglée il suffit de préciser les paramètre d=0&r=1 (eventuellement z=16 pour avoir un facteur de zomm pertinent)
+https://eltorio.github.io/100km/?a=18%20Route%20de%20Notre%20Dame%20de%20la%20Gorge,%2074170%20Les%20Contamines-Monjoie&d=0&r=1&x=989253.7471025363&y=6531596.167614371&z=16
+Pour accéder à la popup pré-réglée il suffit de préciser les paramètre d=0&r=1 (eventuellement z=16 pour avoir un facteur de zoom pertinent)
 https://eltorio.github.io/100km/?d=0&r=1&z=16
 
 # Couches
