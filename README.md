@@ -12,12 +12,23 @@ Les adresses sont celles admises sur <https://api-adresse.data.gouv.fr> , en gé
 numéro type_voie nom_voie, ville
 la virgule séparant la ville et la partie rue.
 
+Une case à cocher permet d'inclure l'intégralité du département comme dans l'arrêté de déconfinement. En décochant cette case seul le rayon est utilisé. Dans l'URL d=0 correspond à la case décochée, d=1 l'inverse.
+
+Le rayon peut être modulé, par défaut il est à 100km comme dans le cas du déconfinement. Cela équivaut au paramètre r=100 dans l'URL.
+
 En cliquant sur la carte le rayon est calculé dynamiquement.
 
 Le paramètre z= peut prendre une valeur de 4 à 19 il s'agit du niveau de zoom initial.
 L'URL dans la barre d'adresse est mise à jour dynamiquement avec les paramètres a= si celui-ci n'était pas fourni et z= lors du changement de zoom.
 
 Les paramètres x= y= sont les coordonnées du centre de la carte. Elles sont mises à jour dans l'url à chaque déplacement. Attention si le centre de la carte fourni dans l'URL n'est pas dans la 'greenZone' celui-ci est ignoré et c'est le centre de l'extent greenZone qui est utilisé pour le centrage.
+
+# Confinement
+Une adaptation a été faite pour prendre en compte les règles du confinement.
+Dans la popup il est nécessaire de décocher la case d'inclusion du département (seules les règles de distance et de frontières sont utilisées).
+Il faut également réduire à 1 la taille du cercle (1km).
+L'URL obtenue donne par exemple:
+https://eltorio.github.io/100km/?a=18%20Route%20de%20Notre%20Dame%20de%20la%20Gorge,%2074170%20Les%20Contamines-Monjoie&d=0&r=1000&x=989253.7471025363&y=6531596.167614371&z=16
 
 # Couches
 Les couches affichées sont : Géoportail cartes IGN, Géoportail satellites, Géoportail aviation OACI.
