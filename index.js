@@ -142,7 +142,7 @@ function setIncludeDepartmentFromURL(){
       }
     return _includeDepartement;
   }
-  if (setIncudeDepartmentFromURL() !== null) {includeDepartement = setIncudeDepartmentFromURL() ;}
+  if (setIncludeDepartmentFromURL() !== null) {includeDepartement = setIncludeDepartmentFromURL() ;}
 
 function setRadiusFromURL(){
   var _greenDistance = null;
