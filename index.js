@@ -100,8 +100,12 @@ function setAddressFromPopup() {
 if (urlParams.get('a') !== null) {
   address = urlParams.get('a');
   addressSet.resolve();
-} else {
-  setAddressFromPopup();
+} else if (urlParams.get('qr') !== null) {
+          document.location.search = atob(urlParams.get('qr'));
+          address = urlParams.get('a');
+          addressSet.resolve();
+        }else{
+        setAddressFromPopup();
 }
 
 if (urlParams.get('z') !== null) {
@@ -465,7 +469,54 @@ jQuery.when(addressSet).then(function () {
   });
 });
 
+var QRControl = function QRControl(opt_options) {
 
+    var options = opt_options || {};
+
+    var button = document.createElement('button');
+    button.innerHTML = 'Q';
+
+    var element = document.createElement('div');
+    element.id = "qrcontrol"
+    element.className = 'ol-qrcontrol ol-unselectable ol-control';
+    element.appendChild(button);
+
+    var qrElement = document.createElement('div');
+    qrElement.id = "QRCode";
+    qrElement.className = "ol-qrcontrol-code";
+    element.appendChild(qrElement);
+
+      ol.control.Control.call(this, {
+        element: element
+      });
+
+    QRControl.prototype.handleQR = function handleQR () {
+      if ($('#QRCode').html() == ""){
+          var baseURL = document.location.origin;
+          baseURL += document.location.pathname;
+          var searchURL = document.location.search;
+          var QRUrl = baseURL+"?qr="+window.btoa(searchURL)
+          console.log("handleQR: "+QRUrl);
+          var qrcode = new QRCode(document.getElementById("QRCode"), {
+            text: QRUrl,
+            width: 256,
+            height: 256,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevelAA : QRCode.CorrectLevel.H});
+          }else{
+            $('#QRCode').html( "" );
+          }
+      };
+    button.addEventListener('click', this.handleQR.bind(this), false);
+    };
+
+  var ol_ext_inherits = function(child,parent) {
+    child.prototype = Object.create(parent.prototype);
+    child.prototype.constructor = child;
+  };
+  ol_ext_inherits(QRControl, ol.control.Control);
+  map.addControl(new QRControl());
 
 var layerSwitcher = new ol.control.LayerSwitcher({
   tipLabel: 'Légende', // Optional label for button
