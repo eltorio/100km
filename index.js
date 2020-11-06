@@ -1,6 +1,10 @@
 //Params
 const clefChoisirGeoportail = "choisirgeoportail";
 const realGeoportailAPIKey = "an7nvfzojv5wa96dsga5nk8w";
+const confinementTitle = "😷 Confinement 😡";
+const deconfinementTitle = "Déconfinement";
+const mapCenterFallback = [652311, 6862059];
+var titlePage = confinementTitle;
 var clefGeoportail = (typeof clefGeoportail === 'undefined') ? realGeoportailAPIKey : clefGeoportail; //this is the real geoportail api key for the OACI layer, please request your own at contact.geoservices@ign.fr
 
 const fallbackAddress = '18 Route de Notre Dame de la Gorge, 74170 Les Contamines-Monjoie'; //Bureau des guides Contas
@@ -8,15 +12,16 @@ var address = fallbackAddress;
 var addressSet = jQuery.Deferred(); // not yet
 var initialZoomLevel = 10; // automatically replaced if parameter z= is provided
 const scoreMiniGeocoding = 0.6;
-const fallbackGreenDistance = 100000; //100km
+const fallbackGreenDistance = 1000; //1km
 var greenDistance = fallbackGreenDistance;
-var includeDepartement = true;
+var includeDepartement = false;
+var modeConfinement = true;
 const wgs84_fullextent = [-198.023011999972, -99.1758454464684, 198.035711151158, 99.0083737124466];
 const rgf93_fullextent = [-357823.2365, 6037008.6939, 1313632.3628, 7230727.3772];
 
 const paysISO = "FR"; // 3 lettres = FRA
 var geocodedAddress;
-var mapCenter = [652311, 6862059];
+var mapCenter = mapCenterFallback;
 
 //Proj4 initialization
 proj4.defs("EPSG:2154", "+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -78,15 +83,26 @@ function setAddressFromPopup() {
     width: "400px"
   });
 
+  //set defaults
+  if (modeConfinement){
+    includeDepartement = false;
+    greenDistance = 1000; //1km
+    titlePage = confinementTitle;
+  }else{
+    includeDepartement = true;
+    greenDistance = 100*1000; //100km
+    titlePage = deconfinementTitle;    
+  }
+  document.title = titlePage;
   if (setIncludeDepartmentFromURL() !== null) {
     includeDepartement = setIncludeDepartmentFromURL();
-    jQuery("#include_departement").prop('checked', includeDepartement);
   }
+  jQuery("#include_departement").prop('checked', includeDepartement);
 
   if (setRadiusFromURL() !== null) {
-    jQuery("#circle_size").val(setRadiusFromURL());
-
+    greenDistance = setRadiusFromURL()*1000;
   }
+  jQuery("#circle_size").val(greenDistance/1000);
   // event handler
   jQuery(document).bind('cbox_closed', function () {
     insertParam('a', address); //adds the filled address to the URL for giving the ability to store the result
@@ -97,6 +113,8 @@ function setAddressFromPopup() {
 }
 
 //Parse URL
+modeConfinement = isModeConfinment();
+
 if (urlParams.get('a') !== null) {
   address = urlParams.get('a');
   addressSet.resolve();
@@ -108,30 +126,63 @@ if (urlParams.get('a') !== null) {
         setAddressFromPopup();
 }
 
-if (urlParams.get('z') !== null) {
-  var _zoom = urlParams.get('z');
-  if (jQuery.isNumeric(_zoom)) {
-    _zoom = Number.parseInt(_zoom);
-    if ((_zoom >= 4) && (_zoom <= 18)) {
-      initialZoomLevel = _zoom;
+setZoomFactorFromURL();
+setMapCenterFromURL();
+
+
+function setZoomFactorFromURL() {
+  if (urlParams.get('z') !== null) {
+    var _zoom = urlParams.get('z');
+    if (jQuery.isNumeric(_zoom)) {
+      _zoom = Number.parseInt(_zoom);
+      if ((_zoom >= 4) && (_zoom <= 18)) {
+        initialZoomLevel = _zoom;
+      }
+    }
+
+  }
+}
+
+function setMapCenterFromURL() {
+  if (urlParams.get('x') !== null) {
+    var _x = urlParams.get('x');
+    if (jQuery.isNumeric(_x)) {
+      mapCenter[0] = Number.parseFloat(_x);
     }
   }
 
-}
-if (urlParams.get('x') !== null){
-  var _x = urlParams.get('x');
-  if (jQuery.isNumeric(_x)){
-      mapCenter[0] = Number.parseFloat(_x);
-  }
-}
-
-if (urlParams.get('y') !== null){
-  var _y = urlParams.get('y');
-  if (jQuery.isNumeric(_y)){
+  if (urlParams.get('y') !== null) {
+    var _y = urlParams.get('y');
+    if (jQuery.isNumeric(_y)) {
       mapCenter[1] = Number.parseFloat(_y);
+    }
   }
 }
 
+function isModeConfinment() {
+  var _modeConfinment = modeConfinement;
+  if (urlParams.get('m') !== null) {
+    var _m = urlParams.get('m');
+    if (jQuery.isNumeric(_m)) {
+      if ((_m == 0) || (_m == 1)) {
+        _modeConfinment = (_m == 1) ? true : false;
+      }
+    }
+  }
+  return _modeConfinment;
+}
+
+function getCurrentPosition() {
+  if (navigator.geolocation) {
+    return new Promise(
+      (resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject)
+    )
+  } else {
+    return new Promise(
+      resolve => resolve({})
+    )
+  }
+}
 
 function setIncludeDepartmentFromURL(){
   var _includeDepartement = null;

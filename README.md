@@ -21,6 +21,8 @@ En cliquant sur la carte le rayon est calculé dynamiquement.
 Le paramètre z= peut prendre une valeur de 4 à 19 il s'agit du niveau de zoom initial.
 L'URL dans la barre d'adresse est mise à jour dynamiquement avec les paramètres a= si celui-ci n'était pas fourni et z= lors du changement de zoom.
 
+Le paramètre m= peut prendre la valeur 0 ou 1, 0 correspond au mode confinement (1km, pas tout le département), 1 à celui du mode déconfinement (100km+l'intégralité du département). Le mode par défaut est le confinement 💢😡😷.
+ 
 Le bouton Q en haut à gauche permet d'afficher ou de cacher un QRCode permet d'avoir un accès direct à la page.
 
 Les paramètres x= y= sont les coordonnées du centre de la carte. Elles sont mises à jour dans l'url à chaque déplacement. Attention si le centre de la carte fourni dans l'URL n'est pas dans la 'greenZone' celui-ci est ignoré et c'est le centre de l'extent greenZone qui est utilisé pour le centrage.
