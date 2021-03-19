@@ -1,7 +1,9 @@
 //Params
-const clefChoisirGeoportail = "choisirgeoportail";
+const clefChoisirGeoportail = "pratique"; // was "choisirgeoportail"; before 2021
 const realGeoportailAPIKey = "an7nvfzojv5wa96dsga5nk8w";
 const confinementTitle = "😷 Confinement 😡";
+const layer_planGeoportail = "GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2"; // was 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD'; before 2021 
+const layer_planGeoportail_format = 'image/png'; // was 'image/jpeg'; before 2021
 const deconfinementTitle = "Déconfinement";
 const mapCenterFallback = [652311, 6862059];
 var titlePage = confinementTitle;
@@ -12,7 +14,7 @@ var address = fallbackAddress;
 var addressSet = jQuery.Deferred(); // not yet
 var initialZoomLevel = 10; // automatically replaced if parameter z= is provided
 const scoreMiniGeocoding = 0.6;
-const fallbackGreenDistance = 1000; //1km
+const fallbackGreenDistance = 10000; //10km
 var greenDistance = fallbackGreenDistance;
 var includeDepartement = false;
 var modeConfinement = true;
@@ -45,7 +47,7 @@ var popUPColorbox = `
 <div style="margin-left:50px;margin-right:50px;font-family: Arial, Helvetica, sans-serif; font-size:12pt;line-height: 1" id="modal-ext-div">
   <p id="p-address" style="text-align: left;font-size:14pt;color:#656564">Adresse:<br /> <textarea rows="3" cols="40" id="input-address" style="text-align: left;font-size:10pt;color:#656564">18 Route de Notre Dame de la Gorge, 74170 Les Contamines-Monjoie</textarea></p>
   <p><input type="checkbox" id="include_departement" name="include_departement" checked><label for="include_departement">Inclure tout le département département?</label></p>
-  <p><input type="number" id="circle_size" name="circle_size" value="100"><label for="circle_size">Taille du cercle (km)?</label></p>
+  <p><input type="number" id="circle_size" name="circle_size" value="10"><label for="circle_size">Taille du cercle (km)?</label></p>
   <p style="font-size: 12pt; text-align: right; margin-right: -25px;color:#656564"><a id="click" onclick="popupFormHandler()" href="#" style="padding: 5px; background: rgb(65,65,64) none repeat scroll 0% 0%; color: rgb(255, 255, 255); cursor: inherit;">Go</a></p>
 </div>`
 
@@ -86,7 +88,7 @@ function setAddressFromPopup() {
   //set defaults
   if (modeConfinement){
     includeDepartement = false;
-    greenDistance = 1000; //1km
+    greenDistance = fallbackGreenDistance; 
     titlePage = confinementTitle;
   }else{
     includeDepartement = true;
@@ -351,9 +353,9 @@ var map = new ol.Map({
           title: 'Carte IGN',
           source: new ol.source.WMTS({
             url: `https://wxs.ign.fr/${clefChoisirGeoportail}/geoportail/wmts`,
-            layer: 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD',
+            layer: `${layer_planGeoportail}`,
             matrixSet: 'PM',
-            format: 'image/jpeg',
+            format: `${layer_planGeoportail_format}`,
             projection: proj_3857,
             style: 'normal',
             tileGrid: new ol.tilegrid.WMTS({
